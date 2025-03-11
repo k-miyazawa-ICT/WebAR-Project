@@ -5,10 +5,10 @@
   <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono; trackingBackend: artoolkit;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
     <!-- カスタムマーカー（.pattファイルを使用） -->
     <a-marker preset="custom" type="pattern" url="https://k-miyazawa-ICT.github.io/WebAR-Project/qr-marker.patt" id="marker">
-      <!-- 3Dモデル（初期状態では表示しない） -->
+      <!-- 3Dモデル（初期状態では非表示） -->
       <a-entity id="model" position="0 0 0" scale="1 1 1" visible="false"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
@@ -22,24 +22,25 @@
       console.log("✅ マーカー認識しました！3Dモデルを読み込みます...");
       alert("QRコードが認識されました！3Dモデルを読み込みます...");
 
-      // 3Dモデルを読み込む（マーカー認識後に設定）
-      model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
-      model.setAttribute("visible", "true");
+      // GLBの遅延読み込み（iPhone対応）
+      setTimeout(() => {
+        model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
+        model.setAttribute("visible", "true");
+      }, 1000);  // 1秒遅延してロード
+    });
 
-      model.addEventListener("model-loaded", () => {
-        console.log("✅ 3Dモデルが正常に読み込まれました！");
-        alert("3Dモデルが表示されました！");
-      });
+    model.addEventListener("model-loaded", () => {
+      console.log("✅ 3Dモデルが正常に読み込まれました！");
+      alert("3Dモデルが表示されました！");
+    });
 
-      model.addEventListener("error", (err) => {
-        console.log("❌ 3Dモデルの読み込みに失敗しました！", err);
-        alert("3Dモデルの読み込みに失敗しました！");
-      });
+    model.addEventListener("error", (err) => {
+      console.log("❌ 3Dモデルの読み込みに失敗しました！", err);
+      alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
     });
 
     marker.addEventListener("markerLost", () => {
       console.log("❌ マーカーを見失いました！");
-      // 3Dモデルを消す（マーカーを見失ったら非表示にする）
       model.setAttribute("visible", "false");
     });
   </script>
