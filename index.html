@@ -1,51 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ar-js-org@2.2.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono_and_matrix;">
-    <!-- ArUcoマーカー（ID: 0）を使用 -->
     <a-marker type="barcode" value="0" id="marker">
-      <a-entity id="model" 
-          gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
-          position="0 0 0"  <!-- 🔹 マーカー基準で配置 -->
-          scale="0 0 0"
-          rotation="0 0 0"
-          visible="true"></a-entity>
+      <a-entity id="model"
+          position="0 0 0"
+          scale="100 100 100"
+          rotation="90 0 0"
+          visible="false"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    let marker = document.querySelector("#marker");
-    let model = document.querySelector("#model");
-    let isModelLoaded = false; // モデルを一回だけ読み込むフラグ
+    const marker = document.querySelector("#marker");
+    const model = document.querySelector("#model");
+    let isModelLoaded = false;
 
     marker.addEventListener("markerFound", () => {
-      if (!isModelLoaded) {  
-        console.log("✅ ArUcoマーカー認識しました！3Dモデルを読み込みます...");
-        alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
+      console.log("✅ マーカーを検出しました！3Dモデルを読み込みます...");
+      if (!isModelLoaded) {
+        model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
         setTimeout(() => {
           model.setAttribute("visible", "true");
-          isModelLoaded = true; 
-        }, 1000);
+          console.log("✅ モデルを表示しました");
+        }, 1000); // モデルが表示されるまでの待機時間
+        isModelLoaded = true;
       }
     });
 
+    // model-loadedイベントをマーカー検出後に限定
     model.addEventListener("model-loaded", () => {
-      console.log("✅ 3Dモデルが正常に読み込まれました！");
-      alert("3Dモデルが表示されました！");
+      if (isModelLoaded) { // マーカーが検出された後にのみアラート
+        console.log("✅ 3Dモデルが正常に読み込まれました！");
+        alert("3Dモデルが表示されました！");
+      }
     });
 
     model.addEventListener("error", (err) => {
-      console.log("❌ 3Dモデルの読み込みに失敗しました！", err);
-      alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
+      console.error("❌ 3Dモデルの読み込みに失敗しました:", err);
+      alert("3Dモデルの読み込みに失敗しました！GLBのURLを確認してください。");
     });
 
     marker.addEventListener("markerLost", () => {
-      console.log("❌ マーカーを見失いましたが、3Dモデルは維持します。");
+      console.log("❌ マーカーを見失いましたが、モデルは表示したままにします。");
     });
   </script>
 </body>
