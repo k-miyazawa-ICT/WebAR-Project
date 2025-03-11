@@ -9,24 +9,26 @@
     <!-- カスタムマーカー（.pattファイルを使用） -->
     <a-marker preset="custom" type="pattern" url="https://k-miyazawa-ICT.github.io/WebAR-Project/qr-marker.patt" id="marker">
       <!-- 3Dモデル（GLB形式） -->
-      <a-entity id="model" gltf-model="model.glb" position="0 0 0" scale="1 1 1"></a-entity>
+      <a-entity id="model" 
+                gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
+                position="0 0 0" 
+                scale="1 1 1" 
+                visible="true"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
-    let marker = document.querySelector("#marker");
     let model = document.querySelector("#model");
 
-    marker.addEventListener("markerFound", () => {
-      console.log("✅ マーカー認識しました");
-      alert("QRコードが認識されました！");
-      model.setAttribute("visible", "true");  // 3Dモデルを表示
+    model.addEventListener("model-loaded", () => {
+      console.log("✅ 3Dモデルが正常に読み込まれました！");
+      alert("3Dモデルが表示されました！");
     });
 
-    marker.addEventListener("markerLost", () => {
-      console.log("❌ マーカーを見失いました");
-      // model.setAttribute("visible", "false");  ← コメントアウトして、モデルを消えないようにする
+    model.addEventListener("error", (err) => {
+      console.log("❌ 3Dモデルの読み込みに失敗しました！", err);
+      alert("3Dモデルの読み込みに失敗しました！");
     });
   </script>
 </body>
