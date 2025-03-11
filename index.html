@@ -2,7 +2,6 @@
 <html>
 <head>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <!-- 修正前と同じAR.jsバージョンに戻す -->
   <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
@@ -20,30 +19,38 @@
     const marker = document.querySelector("#marker");
     const model = document.querySelector("#model");
     let isMarkerDetected = false;
+    let lastDetectionTime = 0; // デバウンス用タイムスタンプ
 
     console.log("✅ シーンが初期化されました。カメラ起動中...");
     console.log("🔍 AR.jsバージョン: 2.2.2を使用");
 
     marker.addEventListener("markerFound", () => {
-      if (!isMarkerDetected) {
-        console.log("✅ ArUcoマーカー（ID: 0）を検出しました！3Dモデルを読み込みます...");
-        alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
+      const currentTime = Date.now();
+      // 500ms以内に重複検出を無視
+      if (!isMarkerDetected || (currentTime - lastDetectionTime > 500)) {
+        if (!isMarkerDetected) {
+          console.log("✅ ArUcoマーカー（ID: 0）を検出しました！3Dモデルを読み込みます...");
+          alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
 
-        model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
-        setTimeout(() => {
-          model.setAttribute("visible", "true");
-          console.log("✅ モデルを表示しました");
-        }, 1000);
+          model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
+          setTimeout(() => {
+            model.setAttribute("visible", "true");
+            console.log("✅ モデルを表示しました");
+          }, 1000);
 
-        isMarkerDetected = true;
+          isMarkerDetected = true;
+        } else {
+          console.log("✅ マーカー再検出：モデルはすでに表示中");
+        }
+        lastDetectionTime = currentTime; // 最新の検出時間を記録
       } else {
-        console.log("✅ マーカー再検出：モデルはすでに表示中");
+        console.log("🔍 検出をスキップ：500ms以内の重複検出");
       }
     });
 
     model.addEventListener("model-loaded", () => {
       console.log("✅ 3Dモデルが正常に読み込まれました！");
-      if (isMarkerDetected) {
+      if (isMarkerDetected && !model.getAttribute("visible")) { // 初回表示時のみアラート
         alert("3Dモデルが表示されました！");
       }
     });
