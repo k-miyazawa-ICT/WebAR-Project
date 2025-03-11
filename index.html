@@ -6,9 +6,10 @@
 </head>
 <body style="margin: 0; overflow: hidden;">
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;">
-    <!-- HIROマーカー（AR.jsに組み込み済みのデフォルトマーカー） -->
-    <a-marker preset="hiro" id="marker">
-      <a-entity id="model" position="0 0 -2" scale="2 2 2" visible="false"></a-entity>
+    <!-- ArUcoマーカー（ID: 0）を使用 -->
+    <a-marker type="barcode" value="0" id="marker">
+      <a-entity id="model" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
+                position="0 0 0" scale="1 1 1" visible="false"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
@@ -18,14 +19,12 @@
     let model = document.querySelector("#model");
 
     marker.addEventListener("markerFound", () => {
-      console.log("✅ マーカー認識しました！3Dモデルを読み込みます...");
-      alert("HIROマーカーが認識されました！3Dモデルを読み込みます...");
+      console.log("✅ ArUcoマーカー認識しました！3Dモデルを読み込みます...");
+      alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
 
-      // GLBの遅延読み込み（iPhone対応）
       setTimeout(() => {
-        model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
         model.setAttribute("visible", "true");
-      }, 1000);  // 1秒遅延してロード
+      }, 1000);
     });
 
     model.addEventListener("model-loaded", () => {
