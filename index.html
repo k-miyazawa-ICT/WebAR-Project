@@ -21,23 +21,18 @@
   <script>
     let marker = document.querySelector("#marker");
     let model = document.querySelector("#model");
+    let isModelLoaded = false; // 🔹 3Dモデルが読み込まれたかを記録するフラグ
 
     marker.addEventListener("markerFound", () => {
-      console.log("✅ ArUcoマーカー認識しました！3Dモデルを読み込みます...");
-      alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
+      if (!isModelLoaded) {  // 🔹 まだモデルを読み込んでいない場合のみ実行
+        console.log("✅ ArUcoマーカー認識しました！3Dモデルを読み込みます...");
+        alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
 
-      setTimeout(() => {
-        model.setAttribute("visible", "true");
-
-        // マーカーの座標を取得して、そのまま固定
-        let position = model.getAttribute("position");
-        let rotation = model.getAttribute("rotation");
-        model.setAttribute("position", position); // 位置を固定
-        model.setAttribute("rotation", rotation); // 回転を固定
-
-        // マーカーが不要になったら、マーカーとの紐付けを解除
-        model.removeAttribute("markerhandler");
-      }, 1000);
+        setTimeout(() => {
+          model.setAttribute("visible", "true");
+          isModelLoaded = true; // 🔹 モデルが読み込まれたことを記録
+        }, 1000);
+      }
     });
 
     model.addEventListener("model-loaded", () => {
@@ -50,7 +45,9 @@
       alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
     });
 
-    // ❌ マーカーを見失ったときの処理を削除！
+    marker.addEventListener("markerLost", () => {
+      console.log("❌ マーカーを見失いましたが、3Dモデルは維持します。");
+    });
   </script>
 </body>
 </html>
