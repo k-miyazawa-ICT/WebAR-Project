@@ -5,11 +5,10 @@
   <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
-    <!-- カスタムマーカー（.pattファイルを使用） -->
-    <a-marker preset="custom" type="pattern" url="https://k-miyazawa-ICT.github.io/WebAR-Project/qr-marker.patt" id="marker">
-      <!-- 3Dモデル（初期状態では非表示） -->
-      <a-entity id="model" position="0 0 0" scale="1 1 1" visible="false"></a-entity>
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;">
+    <!-- HIROマーカー（AR.jsに組み込み済みのデフォルトマーカー） -->
+    <a-marker preset="hiro" id="marker">
+      <a-entity id="model" position="0 0 -2" scale="2 2 2" visible="false"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
@@ -20,7 +19,7 @@
 
     marker.addEventListener("markerFound", () => {
       console.log("✅ マーカー認識しました！3Dモデルを読み込みます...");
-      alert("QRコードが認識されました！3Dモデルを読み込みます...");
+      alert("HIROマーカーが認識されました！3Dモデルを読み込みます...");
 
       // GLBの遅延読み込み（iPhone対応）
       setTimeout(() => {
@@ -46,3 +45,4 @@
   </script>
 </body>
 </html>
+
