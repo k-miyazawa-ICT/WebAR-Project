@@ -8,8 +8,12 @@
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;">
     <!-- ArUcoマーカー（ID: 0）を使用 -->
     <a-marker type="barcode" value="0" id="marker">
-      <a-entity id="model" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
-                position="0 0 0" scale="1000 1000 1000" visible="false"></a-entity>
+      <a-entity id="model" 
+          gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
+          position="0 0 -2"
+          scale="1000 1000 1000"
+          rotation="90 0 0"
+          visible="true"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
