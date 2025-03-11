@@ -2,7 +2,8 @@
 <html>
 <head>
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded successfully')" onerror="console.error('❌ Failed to load AR.js 3.4.7')"></script>
+  <!-- ローカルにダウンロードしたスクリプトを使用 -->
+  <script src="./aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded successfully')" onerror="console.error('❌ Failed to load AR.js 3.4.7')"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
   <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono; sourceWidth: 640; sourceHeight: 480; maxDetectionRate: 30;">
@@ -23,23 +24,24 @@
     let modelLoaded = false; // モデル読み込み済みフラグ
 
     console.log("✅ シーンが初期化されました。カメラ起動中...");
-    console.log("🔍 AR.jsバージョン: 3.4.7を使用。カメラ解像度: 640x480");
+    console.log("🔍 AR.jsバージョン: 3.4.7を使用。デバウンス時間: 3000ms");
 
     marker.addEventListener("markerFound", () => {
       const currentTime = Date.now();
-      // 3000ms以内の重複検出を無視
       if (!isMarkerDetected || (currentTime - lastDetectionTime > 3000)) {
-        console.log("🔍 マーカー検出を評価中...");
-        // 3.4.7のconfidence取得
-        const markerData = marker.components['marker'].data || {};
+        console.log("🔍 マーカー検出を評価中... 経過時間:", currentTime - lastDetectionTime, "ms");
+        const markerData = marker.components['marker']?.data || {};
         const confidence = markerData.confidence || 0;
-        if (confidence > 0.7) { // 信頼度70%以上で検出とみなす
+        console.log("🔍 検出信頼度:", confidence);
+        if (confidence > 0.5) {
           console.log("✅ ArUcoマーカー（ID: 0）を検出しました！信頼度:", confidence);
           if (!isMarkerDetected) {
             alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
             if (!modelLoaded) {
-              model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
-              modelLoaded = true; // モデル読み込みを1回のみ
+              // ローカルまたはリモートのモデルパスを使用
+              model.setAttribute("gltf-model", "./model.glb"); // ローカルに配置する場合
+              // または https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb
+              modelLoaded = true;
             }
             setTimeout(() => {
               model.setAttribute("visible", "true");
