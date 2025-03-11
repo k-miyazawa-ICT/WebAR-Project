@@ -5,15 +5,15 @@
   <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono_and_matrix;">
     <!-- ArUcoマーカー（ID: 0）を使用 -->
     <a-marker type="barcode" value="0" id="marker">
       <a-entity id="model" 
           gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
-          position="0 0 0"
-          scale="1 1 1"
-          rotation="0 0 0"
-          visible="false"></a-entity>
+          position="0 0 0"  <!-- 🔹 マーカー基準で配置 -->
+          scale="100 100 100"
+          rotation="90 0 0"
+          visible="true"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
@@ -21,16 +21,15 @@
   <script>
     let marker = document.querySelector("#marker");
     let model = document.querySelector("#model");
-    let isModelLoaded = false; // 🔹 3Dモデルが読み込まれたかを記録するフラグ
+    let isModelLoaded = false; // モデルを一回だけ読み込むフラグ
 
     marker.addEventListener("markerFound", () => {
-      if (!isModelLoaded) {  // 🔹 まだモデルを読み込んでいない場合のみ実行
+      if (!isModelLoaded) {  
         console.log("✅ ArUcoマーカー認識しました！3Dモデルを読み込みます...");
         alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
-
         setTimeout(() => {
           model.setAttribute("visible", "true");
-          isModelLoaded = true; // 🔹 モデルが読み込まれたことを記録
+          isModelLoaded = true; 
         }, 1000);
       }
     });
