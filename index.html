@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <!-- AR.js 3.4.7の複数候補URL -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded successfully')" onerror="console.error('❌ Failed to load AR.js 3.4.7')"></script>
+  <!-- 代替URL（必要に応じて） -->
+  <script src="https://unpkg.com/ar.js@3.4.7/aframe/build/aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded from unpkg')" onerror="console.error('❌ Failed to load AR.js 3.4.7 from unpkg')"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono; sourceWidth: 640; sourceHeight: 480;">
     <a-marker type="barcode" value="0" id="marker">
       <a-entity id="model"
                 position="0 0 -2"
@@ -19,17 +22,16 @@
     const marker = document.querySelector("#marker");
     const model = document.querySelector("#model");
     let isMarkerDetected = false;
-    let lastDetectionTime = 0; // デバウンス用タイムスタンプ
+    let lastDetectionTime = 0;
 
     console.log("✅ シーンが初期化されました。カメラ起動中...");
-    console.log("🔍 AR.jsバージョン: 2.2.2を使用");
+    console.log("🔍 AR.jsバージョン: 3.4.7を読み込み中...");
 
     marker.addEventListener("markerFound", () => {
       const currentTime = Date.now();
-      // 500ms以内に重複検出を無視
-      if (!isMarkerDetected || (currentTime - lastDetectionTime > 500)) {
+      if (!isMarkerDetected || (currentTime - lastDetectionTime > 2000)) {
         if (!isMarkerDetected) {
-          console.log("✅ ArUcoマーカー（ID: 0）を検出しました！3Dモデルを読み込みます...");
+          console.log("✅ ArUcoマーカー（ID: 0）を検出しました！");
           alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
 
           model.setAttribute("gltf-model", "https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb");
@@ -39,18 +41,16 @@
           }, 1000);
 
           isMarkerDetected = true;
+          lastDetectionTime = currentTime;
         } else {
           console.log("✅ マーカー再検出：モデルはすでに表示中");
         }
-        lastDetectionTime = currentTime; // 最新の検出時間を記録
-      } else {
-        console.log("🔍 検出をスキップ：500ms以内の重複検出");
       }
     });
 
     model.addEventListener("model-loaded", () => {
       console.log("✅ 3Dモデルが正常に読み込まれました！");
-      if (isMarkerDetected && !model.getAttribute("visible")) { // 初回表示時のみアラート
+      if (isMarkerDetected && !model.getAttribute("visible")) {
         alert("3Dモデルが表示されました！");
       }
     });
