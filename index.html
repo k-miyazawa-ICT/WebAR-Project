@@ -13,7 +13,7 @@
           position="0 0 -2"
           scale="100 100 100"
           rotation="90 0 0"
-          visible="true"></a-entity>
+          visible="false"></a-entity>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
@@ -28,6 +28,15 @@
 
       setTimeout(() => {
         model.setAttribute("visible", "true");
+
+        // マーカーの座標を取得して、そのまま固定
+        let position = model.getAttribute("position");
+        let rotation = model.getAttribute("rotation");
+        model.setAttribute("position", position); // 位置を固定
+        model.setAttribute("rotation", rotation); // 回転を固定
+
+        // マーカーが不要になったら、マーカーとの紐付けを解除
+        model.removeAttribute("markerhandler");
       }, 1000);
     });
 
@@ -41,11 +50,7 @@
       alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
     });
 
-    marker.addEventListener("markerLost", () => {
-      console.log("❌ マーカーを見失いました！");
-      model.setAttribute("visible", "false");
-    });
+    // ❌ マーカーを見失ったときの処理を削除！
   </script>
 </body>
 </html>
-
