@@ -6,8 +6,9 @@
   <script src="./aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded successfully')" onerror="console.error('❌ Failed to load AR.js 3.4.7')"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: mono; sourceWidth: 640; sourceHeight: 480; maxDetectionRate: 30;">
-    <a-marker type="barcode" value="0" id="marker">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: color; maxDetectionRate: 30; debug: true;">
+    <!-- Hiroマーカーを使ってテスト -->
+    <a-marker preset="hiro" id="marker">
       <a-entity id="model"
                 position="0 0 -2"
                 scale="2 2 2"
@@ -17,67 +18,92 @@
   </a-scene>
 
   <script>
-    const marker = document.querySelector("#marker");
-    const model = document.querySelector("#model");
-    let isMarkerDetected = false;
-    let lastDetectionTime = 0; // デバウンス用タイムスタンプ
-    let modelLoaded = false; // モデル読み込み済みフラグ
+    // カメラアクセスの手動確認
+    async function checkCameraAccess() {
+      console.log("🔍 カメラアクセスをチェック中...");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log("✅ カメラアクセスが許可されました。ストリーム:", stream);
+        stream.getTracks().forEach(track => track.stop());
+        initAR();
+      } catch (err) {
+        console.error("❌ カメラアクセスエラー:", err.name, err.message);
+        alert("カメラエラー: " + err.message + "。設定を確認してください。");
+      }
+    }
 
-    console.log("✅ シーンが初期化されました。カメラ起動中...");
-    console.log("🔍 AR.jsバージョン: 3.4.7を使用。デバウンス時間: 3000ms");
+    // AR初期化関数
+    function initAR() {
+      const marker = document.querySelector("#marker");
+      const model = document.querySelector("#model");
+      let isMarkerDetected = false;
+      let lastDetectionTime = 0;
+      let modelLoaded = false;
 
-    marker.addEventListener("markerFound", () => {
-      const currentTime = Date.now();
-      if (!isMarkerDetected || (currentTime - lastDetectionTime > 3000)) {
-        console.log("🔍 マーカー検出を評価中... 経過時間:", currentTime - lastDetectionTime, "ms");
-        const markerData = marker.components['marker']?.data || {};
-        const confidence = markerData.confidence || 0;
-        console.log("🔍 検出信頼度:", confidence);
-        if (confidence > 0.5) {
-          console.log("✅ ArUcoマーカー（ID: 0）を検出しました！信頼度:", confidence);
-          if (!isMarkerDetected) {
-            alert("ArUcoマーカーが認識されました！3Dモデルを読み込みます...");
-            if (!modelLoaded) {
-              // ローカルまたはリモートのモデルパスを使用
-              model.setAttribute("gltf-model", "./model.glb"); // ローカルに配置する場合
-              // または https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb
-              modelLoaded = true;
+      document.querySelector('a-scene').addEventListener('realityFound', () => {
+        console.log("✅ カメラとARトラッキングが初期化されました。");
+      });
+
+      document.querySelector('a-scene').addEventListener('realityError', (event) => {
+        console.error("❌ AR初期化エラー:", event.detail);
+      });
+
+      marker.addEventListener("markerFound", () => {
+        const currentTime = Date.now();
+        if (!isMarkerDetected || (currentTime - lastDetectionTime > 3000)) {
+          console.log("🔍 マーカー検出を評価中... 経過時間:", currentTime - lastDetectionTime, "ms");
+          const markerData = marker.components['marker']?.data || {};
+          const confidence = markerData.confidence || 0;
+          console.log("🔍 検出信頼度:", confidence);
+          if (confidence > 0.3) {
+            console.log("✅ Hiroマーカーを検出しました！信頼度:", confidence);
+            if (!isMarkerDetected) {
+              alert("Hiroマーカーが認識されました！3Dモデルを読み込みます...");
+              if (!modelLoaded) {
+                model.setAttribute("gltf-model", "./model.glb");
+                modelLoaded = true;
+              }
+              setTimeout(() => {
+                model.setAttribute("visible", "true");
+                console.log("✅ モデルを表示しました");
+              }, 1000);
+              isMarkerDetected = true;
+              lastDetectionTime = currentTime;
+            } else {
+              console.log("✅ マーカー再検出：モデルはすでに表示中。信頼度:", confidence);
             }
-            setTimeout(() => {
-              model.setAttribute("visible", "true");
-              console.log("✅ モデルを表示しました");
-            }, 1000);
-            isMarkerDetected = true;
-            lastDetectionTime = currentTime;
           } else {
-            console.log("✅ マーカー再検出：モデルはすでに表示中。信頼度:", confidence);
+            console.log("❌ 検出信頼度が低い（", confidence, "）ためスキップ");
           }
         } else {
-          console.log("❌ 検出信頼度が低い（", confidence, "）ためスキップ");
+          console.log("🔍 検出をスキップ：3000ms以内の重複検出");
         }
-      } else {
-        console.log("🔍 検出をスキップ：3000ms以内の重複検出");
-      }
-    });
+      });
 
-    model.addEventListener("model-loaded", () => {
-      console.log("✅ 3Dモデルが正常に読み込まれました！");
-      if (isMarkerDetected && !model.getAttribute("visible")) {
-        alert("3Dモデルが表示されました！");
-      }
-    });
+      model.addEventListener("model-loaded", () => {
+        console.log("✅ 3Dモデルが正常に読み込まれました！");
+        if (isMarkerDetected && !model.getAttribute("visible")) {
+          alert("3Dモデルが表示されました！");
+        }
+      });
 
-    model.addEventListener("error", (err) => {
-      console.error("❌ 3Dモデルの読み込みに失敗しました:", err);
-      alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
-    });
+      model.addEventListener("error", (err) => {
+        console.error("❌ 3Dモデルの読み込みに失敗しました:", err);
+        alert("3Dモデルの読み込みに失敗しました！GLBファイルのURLを確認してください。");
+      });
 
-    marker.addEventListener("markerLost", () => {
-      console.log("❌ マーカーを見失いました！モデルは固定表示を維持します。");
-    });
+      marker.addEventListener("markerLost", () => {
+        console.log("❌ マーカーを見失いました！モデルは固定表示を維持します。");
+      });
 
-    document.querySelector('a-scene').addEventListener('loaded', () => {
-      console.log("✅ a-sceneがロードされました。ARトラッキングを開始します。");
+      document.querySelector('a-scene').addEventListener('loaded', () => {
+        console.log("✅ a-sceneがロードされました。ARトラッキングを開始します。");
+      });
+    }
+
+    window.addEventListener('load', () => {
+      console.log("✅ ページが読み込まれました。カメラアクセスをチェックします...");
+      checkCameraAccess();
     });
   </script>
 </body>
