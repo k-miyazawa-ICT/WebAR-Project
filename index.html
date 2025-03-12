@@ -6,7 +6,7 @@
   <script src="./aframe-ar.js" onload="console.log('✅ AR.js 3.4.7 loaded successfully')" onerror="console.error('❌ Failed to load AR.js 3.4.7')"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: color; maxDetectionRate: 30; debug: true;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best; detectionMode: color; sourceWidth: 640; sourceHeight: 480; maxDetectionRate: 30; debug: true;">
     <!-- Hiroマーカーを使ってテスト -->
     <a-marker preset="hiro" id="marker">
       <a-entity id="model"
@@ -22,7 +22,7 @@
     async function checkCameraAccess() {
       console.log("🔍 カメラアクセスをチェック中...");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
         console.log("✅ カメラアクセスが許可されました。ストリーム:", stream);
         stream.getTracks().forEach(track => track.stop());
         initAR();
@@ -45,7 +45,7 @@
       });
 
       document.querySelector('a-scene').addEventListener('realityError', (event) => {
-        console.error("❌ AR初期化エラー:", event.detail);
+        console.error("❌ AR初期化エラー:", event.detail.error, event.detail.message);
       });
 
       marker.addEventListener("markerFound", () => {
