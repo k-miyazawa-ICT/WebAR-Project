@@ -30,12 +30,13 @@
             let obj = model.getObject3D('mesh');  // Three.jsのオブジェクト取得
             if (obj) {
                 obj.traverse((node) => {
-                    if (node.isMesh) {
-                        node.material.transparent = true;  // 透明有効化
-                        node.material.opacity = 0.9;  // 透明度50%
-                        node.material.depthWrite = false;  // スマホでの透明処理を強制
-                        console.log("✅ 半透明 & depthWrite: false を適用しました！");
-                    }
+                  if (node.isMesh) {
+                      node.material.transparent = true;  
+                      node.material.opacity = 0.9;
+                      node.material.depthWrite = false;  // 追加
+                      node.material.blending = THREE.NormalBlending;  // 追加
+                  }
+
                 });
             } else {
                 console.log("❌ obj が null になっています！（スマホ？）");
