@@ -5,6 +5,38 @@
     <title>AR.js Hiro Marker Sample</title>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+
+    <script>
+      // コンポーネントをHTMLのhead内で登録（先に読み込ませる）
+      AFRAME.registerComponent('set-transparent', {
+        init: function () {
+          let model = this.el;
+          model.addEventListener('model-loaded', function () {
+            console.log("✅ モデルがロードされました！（PC & スマホ）");
+            
+            // 一定時間待機してから適用（スマホ対策）
+            setTimeout(() => {
+              let obj = model.getObject3D('mesh');  // Three.jsのオブジェクト取得
+              if (obj) {
+                obj.traverse((node) => {
+                  if (node.isMesh) {
+                    node.material.transparent = true;  // 透明を有効化
+                    node.material.opacity = 0.5;      // 不透明度50%
+                    node.material.alphaMode = "BLEND";  // PBRマテリアルの透明化を有効化
+                    node.material.blending = THREE.NormalBlending; // ブレンディング設定
+                    node.material.depthWrite = false; // 深度書き込みをオフ
+                    node.material.needsUpdate = true; // 変更を確実に反映させる
+                    console.log("✅ 半透明が適用されました！");
+                  }
+                });
+              } else {
+                console.error("❌ obj が null になっています！（スマホの可能性あり）");
+              }
+            }, 100); // 100ms 待機
+          });
+        }
+      });
+    </script>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;">
@@ -20,32 +52,5 @@
       <!-- カメラ -->
       <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-      AFRAME.registerComponent('set-transparent', {
-        init: function () {
-          let model = this.el;
-          model.addEventListener('model-loaded', function () {
-            console.log("✅ モデルがロードされました！（PC & スマホ）");
-            let obj = model.getObject3D('mesh');  // Three.jsのオブジェクト取得
-            if (obj) {
-              obj.traverse((node) => {
-                if (node.isMesh) {
-                  node.material.transparent = true;  // 透明を有効化
-                  node.material.opacity = 0.5;      // 不透明度50%
-                  node.material.alphaMode = "BLEND";  // PBRマテリアルの透明化を有効化
-                  node.material.blending = THREE.NormalBlending; // ブレンディング設定
-                  node.material.depthWrite = false; // 深度書き込みをオフ
-                  node.material.needsUpdate = true; // 変更を確実に反映させる
-                  console.log("✅ 半透明が適用されました！");
-                }
-              });
-            } else {
-              console.log("❌ obj が null になっています！（スマホ？）");
-            }
-          });
-        }
-      });
-    </script>
   </body>
 </html>
