@@ -32,8 +32,9 @@
                 obj.traverse((node) => {
                     if (node.isMesh) {
                         node.material.transparent = true;  // 透明有効化
-                        node.material.opacity = 0.9;  // 透明度50%
-                        console.log("✅ 半透明が適用されました！");
+                        node.material.opacity = 0.5;  // 透明度50%
+                        node.material.depthWrite = false;  // スマホでの透明処理を強制
+                        console.log("✅ 半透明 & depthWrite: false を適用しました！");
                     }
                 });
             } else {
@@ -42,6 +43,7 @@
         });
     }
 });
+
 
 
         // コンポーネントを3Dモデルに適用
