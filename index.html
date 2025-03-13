@@ -13,14 +13,16 @@
           let model = document.querySelector("#myModel");
           
           marker.addEventListener("markerFound", function () {
-            console.log("✅ マーカー検出！位置を保存");
-            model.setAttribute("visible", "true"); // モデルを表示
             let position = marker.getAttribute("position");
             let rotation = marker.getAttribute("rotation");
+            console.log("✅ マーカー検出！位置を保存", position, rotation);  // 位置と回転を確認
 
-            // マーカーの現在位置をモデルに適用（固定する）
-            model.setAttribute("position", position);
-            model.setAttribute("rotation", rotation);
+            model.setAttribute("position", position || "0 0 0");
+            model.setAttribute("rotation", rotation || "0 0 0");
+          });
+
+          model.addEventListener('model-loaded', function () {
+            console.log("✅ モデルが正常にロードされました！");
           });
 
           marker.addEventListener("markerLost", function () {
@@ -38,7 +40,7 @@
                   scale="8.6 8.6 8.6"
                   rotation="90 0 0"
                   position="0.7 -0.66 0"
-                  visible="false">
+                  visible="true">
         </a-entity>
       </a-marker>
 
