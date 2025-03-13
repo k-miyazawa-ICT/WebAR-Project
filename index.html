@@ -10,15 +10,39 @@
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;">
       <!-- Hiroマーカーが見えたときに表示するモデル -->
       <a-marker preset="hiro" smooth="true" smoothCount="5">
-        <a-entity gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
+        <a-entity id="myModel" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
                   scale="8.6 8.6 8.6" 
                   rotation="90 0 0" 
                   position="0.7 -0.66 0"
-                  material="opacity: 0.9; transparent: true; alphaMode: BLEND;">
+                  set-transparent>
         </a-entity>
       </a-marker>
       <!-- カメラ -->
       <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+      AFRAME.registerComponent('set-transparent', {
+        init: function () {
+          let model = this.el;
+          model.addEventListener('model-loaded', function () {
+            console.log("✅ モデルがロードされました！（PC & スマホ）");
+            let obj = model.getObject3D('mesh');  // Three.jsのオブジェクト取得
+            if (obj) {
+              obj.traverse((node) => {
+                if (node.isMesh) {
+                  node.material.transparent = true;  // 透明有効化
+                  node.material.opacity = 0.5;      // 透明度50%
+                  node.material.needsUpdate = true; // スマホで適用するために必要
+                  console.log("✅ 半透明が適用されました！");
+                }
+              });
+            } else {
+              console.log("❌ obj が null になっています！（スマホ？）");
+            }
+          });
+        }
+      });
+    </script>
   </body>
 </html>
