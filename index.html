@@ -31,9 +31,12 @@
             if (obj) {
               obj.traverse((node) => {
                 if (node.isMesh) {
-                  node.material.transparent = true;  // 透明有効化
-                  node.material.opacity = 0.5;      // 透明度50%
-                  node.material.needsUpdate = true; // スマホで適用するために必要
+                  node.material.transparent = true;  // 透明を有効化
+                  node.material.opacity = 0.5;      // 不透明度50%
+                  node.material.alphaMode = "BLEND";  // PBRマテリアルの透明化を有効化
+                  node.material.blending = THREE.NormalBlending; // ブレンディング設定
+                  node.material.depthWrite = false; // 深度書き込みをオフ
+                  node.material.needsUpdate = true; // 変更を確実に反映させる
                   console.log("✅ 半透明が適用されました！");
                 }
               });
