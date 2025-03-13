@@ -11,44 +11,15 @@
         <!-- Hiroマーカー -->
         <a-marker preset="hiro" smooth="true" smoothCount="5">
             <!-- 3Dモデル -->
-            <a-entity id="myModel" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
-                      scale="8.6 8.6 8.6" 
-                      rotation="90 0 0" 
-                      position="0.7 -0.66 0">
+            <a-entity material="opacity: 0.5; transparent: true;">
+              <a-entity gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb"
+                        scale="8.6 8.6 8.6"
+                        rotation="90 0 0"
+                        position="0.7 -0.66 0">
+              </a-entity>
             </a-entity>
         </a-marker>
         <a-camera position="0 0 0"></a-camera>
     </a-scene>
-
-    <script>
-        // A-Frameコンポーネントを作成して透明化
-        AFRAME.registerComponent('set-transparent', {
-    init: function () {
-        let model = this.el;
-        model.addEventListener('model-loaded', function () {
-            console.log("✅ モデルがロードされました！（PC & スマホ）");
-            let obj = model.getObject3D('mesh');  // Three.jsのオブジェクト取得
-            if (obj) {
-                obj.traverse((node) => {
-                  if (node.isMesh) {
-                      node.material.transparent = true;  
-                      node.material.opacity = 0.9;
-                      node.material.depthWrite = false;  // 追加
-                      node.material.blending = THREE.NormalBlending;  // 追加
-                  }
-
-                });
-            } else {
-                console.log("❌ obj が null になっています！（スマホ？）");
-            }
-        });
-    }
-});
-
-
-
-        // コンポーネントを3Dモデルに適用
-        document.getElementById("myModel").setAttribute("set-transparent", "");
-    </script>
 </body>
 </html>
