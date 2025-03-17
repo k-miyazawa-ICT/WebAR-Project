@@ -2,15 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8" />
-    <title>AR.js + Three.js マーカー認識</title>
+    <title>AR.js + Three.js マーカー独立</title>
 
-    <!-- Three.jsの適切なバージョン（r110） -->
+    <!-- Three.js r110（AR.jsと互換性あり） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
     
-    <!-- AR.js（Three.js対応版） -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar.js"></script>
+    <!-- AR.js（Three.js用ビルド） -->
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/ar-threex.js"></script>
 
-    <!-- GLTFLoader（モデル読み込み用） -->
+    <!-- GLTFLoader（3Dモデル読み込み） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/examples/js/loaders/GLTFLoader.js"></script>
 
 </head>
@@ -23,7 +23,6 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x000000, 0); // 背景透過
         document.body.appendChild(renderer.domElement);
 
         // ========== AR.jsの初期化 ==========
@@ -41,7 +40,7 @@
 
         // ========== ARToolKitのコンテキスト設定 ==========
         const arToolkitContext = new THREEx.ArToolkitContext({
-            cameraParametersUrl: "https://rawgit.com/jeromeetienne/ar.js/master/data/camera_para.dat",
+            cameraParametersUrl: "https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/data/camera_para.dat",
             detectionMode: "mono"
         });
 
@@ -55,13 +54,13 @@
 
         const markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
             type: "pattern",
-            patternUrl: "https://rawgit.com/jeromeetienne/ar.js/master/data/patt.hiro",
+            patternUrl: "https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/data/patt.hiro",
             changeMatrixMode: "modelViewMatrix"
         });
 
         // ========== 3Dモデルの読み込み ==========
         const loader = new THREE.GLTFLoader();
-        let model;
+        let model, lastPosition = null, lastRotation = null, modelDetached = false;
 
         loader.load("https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb", function (gltf) {
             model = gltf.scene;
@@ -79,8 +78,27 @@
                 arToolkitContext.update(arToolkitSource.domElement);
             }
 
-            if (model) {
-                model.visible = markerRoot.visible;  // マーカーが見えたら表示
+            if (model && markerRoot.visible) {
+                // マーカーが見つかったら、モデルの座標を保存
+                const worldPos = new THREE.Vector3();
+                const worldRot = new THREE.Quaternion();
+                markerRoot.getWorldPosition(worldPos);
+                markerRoot.getWorldQuaternion(worldRot);
+
+                lastPosition = worldPos.clone();
+                lastRotation = worldRot.clone();
+                model.visible = true;
+                modelDetached = false;
+            }
+
+            if (model && !markerRoot.visible && lastPosition && !modelDetached) {
+                // マーカーが消えたら、モデルをワールド座標に固定
+                console.log("✅ マーカーが消えたのでモデルをワールド空間に固定");
+                
+                scene.add(model); // シーンに直接追加して、マーカーから解放
+                model.position.copy(lastPosition);
+                model.quaternion.copy(lastRotation);
+                modelDetached = true;
             }
 
             renderer.render(scene, camera);
