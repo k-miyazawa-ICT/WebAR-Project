@@ -1,87 +1,88 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <title>AR.js Hiro Marker Sample</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar.min.js"></script>
 
     <script>
-      let lastPosition = null;  // 最後の位置を記録
-      let lastRotation = null;  // 最後の回転を記録
-      let modelPersisted = false; // モデルがすでにワールド空間へ固定されたか判定
+        let lastPosition = null;  // 最後のワールド座標を記録
+        let lastRotation = null;  // 最後の回転を記録
+        let modelDetached = false; // モデルがワールド空間に移動したか
 
-      AFRAME.registerComponent('track-marker', {
-        init: function () {
-          let marker = this.el;
-          let model = document.querySelector("#myModel");
-          let scene = document.querySelector("a-scene");
+        document.addEventListener("DOMContentLoaded", function () {
+            let scene = new THREE.Scene();
+            let camera = new THREE.Camera();
+            scene.add(camera);
 
-          marker.addEventListener("markerFound", function () {
-            console.log("✅ マーカー検出！位置を保存 & 半透明化");
-            
-            // モデルがすでにワールド空間にあるなら、再度適用しない
-            if (modelPersisted) return;
+            let renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-            lastPosition = marker.object3D.getWorldPosition(new THREE.Vector3());
-            lastRotation = marker.object3D.getWorldQuaternion(new THREE.Quaternion());
+            let arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+            arToolkitSource.init(() => {
+                setTimeout(() => {
+                    arToolkitSource.onResizeElement();
+                    arToolkitSource.copyElementSizeTo(renderer.domElement);
+                }, 1000);
+            });
 
-            model.object3D.position.copy(lastPosition);
-            model.object3D.quaternion.copy(lastRotation);
-            model.setAttribute("visible", "true");
+            let arToolkitContext = new THREEx.ArToolkitContext({
+                cameraParametersUrl: "https://rawgit.com/jeromeetienne/ar.js/master/data/camera_para.dat",
+                detectionMode: "mono"
+            });
+            arToolkitContext.init(() => {
+                camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+            });
 
-            // 半透明化を適用
-            setTimeout(() => {
-              let obj = model.getObject3D('mesh');
-              if (obj) {
-                obj.traverse((node) => {
-                  if (node.isMesh) {
-                    node.material.transparent = true;
-                    node.material.opacity = 0.7;
-                    node.material.alphaMode = "BLEND";
-                    node.material.blending = THREE.NormalBlending;
-                    node.material.depthWrite = false;
-                    node.material.needsUpdate = true;
-                    console.log("✅ 半透明が適用されました！");
-                  }
+            let markerControls = new THREEx.ArMarkerControls(arToolkitContext, camera, {
+                type: "pattern",
+                patternUrl: "https://rawgit.com/jeromeetienne/ar.js/master/data/patt.hiro",
+                changeMatrixMode: "modelViewMatrix"
+            });
+
+            let loader = new THREE.GLTFLoader();
+            loader.load("https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb", function (gltf) {
+                let model = gltf.scene;
+                model.scale.set(8.6, 8.6, 8.6);
+                model.visible = false;
+                scene.add(model);
+
+                markerControls.addEventListener("markerFound", function () {
+                    console.log("✅ マーカー検出！位置を保存 & 半透明化");
+                    let worldPos = new THREE.Vector3();
+                    let worldRot = new THREE.Quaternion();
+                    camera.getWorldPosition(worldPos);
+                    camera.getWorldQuaternion(worldRot);
+                    lastPosition = worldPos.clone();
+                    lastRotation = worldRot.clone();
+                    model.position.copy(lastPosition);
+                    model.quaternion.copy(lastRotation);
+                    model.visible = true;
                 });
-              } else {
-                console.error("❌ obj が null になっています！（スマホの可能性あり）");
-              }
-            }, 100);
-          });
 
-          marker.addEventListener("markerLost", function () {
-            if (!modelPersisted) {
-              console.log("✅ マーカーが見えなくなったが、モデルをAR空間に固定");
+                markerControls.addEventListener("markerLost", function () {
+                    if (lastPosition && !modelDetached) {
+                        console.log("✅ マーカーが見えなくなったけど、モデルをワールド空間に固定");
+                        model.position.copy(lastPosition);
+                        model.quaternion.copy(lastRotation);
+                        model.visible = true;
+                        modelDetached = true;
+                    }
+                });
+            });
 
-              // モデルをシーン直下に移動（A-Frameの `appendChild` は不要）
-              model.object3D.position.copy(lastPosition);
-              model.object3D.quaternion.copy(lastRotation);
-              
-              // `a-marker` から `a-scene` 直下に移動し、消えないようにする
-              scene.appendChild(model);
-
-              modelPersisted = true;
+            function animate() {
+                requestAnimationFrame(animate);
+                if (arToolkitSource.ready) {
+                    arToolkitContext.update(arToolkitSource.domElement);
+                }
+                renderer.render(scene, camera);
             }
-          });
-        }
-      });
+            animate();
+        });
     </script>
-  </head>
-  <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;">
-      <!-- Hiroマーカーが見えたときに表示するモデル -->
-      <a-marker preset="hiro" smooth="true" smoothCount="5" track-marker>
-        <a-entity id="myModel" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
-                  scale="8.6 8.6 8.6" 
-                  rotation="90 0 0" 
-                  position="0.7 -0.66 0"
-                  visible="false">
-        </a-entity>
-      </a-marker>
-      <!-- カメラ -->
-      <a-entity camera></a-entity>
-    </a-scene>
-  </body>
+</head>
+<body style="margin: 0; overflow: hidden;"></body>
 </html>
