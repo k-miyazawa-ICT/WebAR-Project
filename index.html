@@ -3,65 +3,78 @@
 <head>
     <meta charset="UTF-8" />
     <title>AR.js Hiro Marker Sample</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- A-Frame を先に読み込む -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+    <!-- AR.js を後に読み込む -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <script>
-        let lastPosition = new THREE.Vector3();  // 最後のワールド座標を記録
-        let lastRotation = new THREE.Quaternion();  // 最後の回転を記録
-        let modelDetached = false; // モデルがワールド空間に移動したか
+        document.addEventListener("DOMContentLoaded", function () {
+            if (typeof AFRAME === "undefined") {
+                console.error("❌ AFRAME がロードされていません！");
+                return;
+            }
 
-        AFRAME.registerComponent('track-marker', {
-            init: function () {
-                let marker = this.el;
-                let model = document.querySelector("#myModel").object3D;
-                let scene = document.querySelector("a-scene").object3D;
+            console.log("✅ AFRAME が正しくロードされました！");
 
-                marker.addEventListener("markerFound", function () {
-                    console.log("✅ マーカー検出！位置を保存 & 半透明化");
+            let lastPosition = new THREE.Vector3();  
+            let lastRotation = new THREE.Quaternion();
+            let modelDetached = false;
 
-                    // ワールド座標・回転を取得
-                    marker.object3D.getWorldPosition(lastPosition);
-                    marker.object3D.getWorldQuaternion(lastRotation);
+            AFRAME.registerComponent('track-marker', {
+                init: function () {
+                    let marker = this.el;
+                    let model = document.querySelector("#myModel").object3D;
+                    let scene = document.querySelector("a-scene").object3D;
 
-                    model.position.copy(lastPosition);
-                    model.quaternion.copy(lastRotation);
-                    model.visible = true;
-                    modelDetached = false;
+                    marker.addEventListener("markerFound", function () {
+                        console.log("✅ マーカー検出！位置を保存 & 半透明化");
 
-                    // 半透明化処理
-                    setTimeout(() => {
-                        model.traverse((node) => {
-                            if (node.isMesh) {
-                                node.material.transparent = true;
-                                node.material.opacity = 0.7;
-                                node.material.alphaMode = "BLEND";
-                                node.material.blending = THREE.NormalBlending;
-                                node.material.depthWrite = false;
-                                node.material.needsUpdate = true;
-                                console.log("✅ 半透明が適用されました！");
-                            }
-                        });
-                    }, 100);
-                });
+                        // ワールド座標・回転を取得
+                        marker.object3D.getWorldPosition(lastPosition);
+                        marker.object3D.getWorldQuaternion(lastRotation);
 
-                marker.addEventListener("markerLost", function () {
-                    if (!modelDetached) {
-                        console.log("✅ マーカーが見えなくなったけど、モデルをワールド空間に固定");
-
-                        // モデルをシーンの直下に移動（カメラの影響を受けない）
-                        scene.add(model);
-
-                        // ワールド座標を適用
                         model.position.copy(lastPosition);
                         model.quaternion.copy(lastRotation);
-                        model.scale.set(8.6, 8.6, 8.6); // スケールを適用
-                        
                         model.visible = true;
-                        modelDetached = true;
-                    }
-                });
-            }
+                        modelDetached = false;
+
+                        // 半透明化処理
+                        setTimeout(() => {
+                            model.traverse((node) => {
+                                if (node.isMesh) {
+                                    node.material.transparent = true;
+                                    node.material.opacity = 0.7;
+                                    node.material.alphaMode = "BLEND";
+                                    node.material.blending = THREE.NormalBlending;
+                                    node.material.depthWrite = false;
+                                    node.material.needsUpdate = true;
+                                    console.log("✅ 半透明が適用されました！");
+                                }
+                            });
+                        }, 100);
+                    });
+
+                    marker.addEventListener("markerLost", function () {
+                        if (!modelDetached) {
+                            console.log("✅ マーカーが見えなくなったけど、モデルをワールド空間に固定");
+
+                            // モデルをシーンの直下に移動（カメラの影響を受けない）
+                            scene.add(model);
+
+                            // ワールド座標を適用
+                            model.position.copy(lastPosition);
+                            model.quaternion.copy(lastRotation);
+                            model.scale.set(8.6, 8.6, 8.6); // スケールを適用
+                            
+                            model.visible = true;
+                            modelDetached = true;
+                        }
+                    });
+                }
+            });
         });
     </script>
 </head>
