@@ -50,6 +50,7 @@
               console.log("✅ マーカーが見えなくなったけど、モデルは残す");
               model.setAttribute("position", `${lastPosition.x} ${lastPosition.y} ${lastPosition.z}`);
               model.setAttribute("rotation", `${lastRotation.x} ${lastRotation.y} ${lastRotation.z}`);
+              model.setAttribute("visible", "true"); // モデルを表示状態に設定
               modelDetached = true;
             }
           });
