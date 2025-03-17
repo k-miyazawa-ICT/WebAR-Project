@@ -19,12 +19,16 @@
           marker.addEventListener("markerFound", function () {
             console.log("✅ マーカー検出！位置を保存 & 半透明化");
 
-            lastPosition = marker.object3D.position.clone();
-            lastRotation = marker.object3D.rotation.clone();
+            // 一度固定されたら、新しい位置を取得しない
+            if (!modelDetached) {
+              lastPosition = marker.object3D.position.clone();
+              lastRotation = marker.object3D.rotation.clone();
+            }
+
             model.setAttribute("visible", "true");
             modelDetached = false;
 
-            // モデルの半透明化
+            // モデルの半透明化を毎回適用
             setTimeout(() => {
               let obj = model.getObject3D('mesh');
               if (obj) {
@@ -48,9 +52,15 @@
           marker.addEventListener("markerLost", function () {
             if (lastPosition && !modelDetached) {
               console.log("✅ マーカーが見えなくなったけど、モデルは残す");
-              model.setAttribute("position", `${lastPosition.x} ${lastPosition.y} ${lastPosition.z}`);
-              model.setAttribute("rotation", `${lastRotation.x} ${lastRotation.y} ${lastRotation.z}`);
-              model.setAttribute("visible", "true"); // モデルを表示状態に設定
+
+              // 新しくモデルを `a-scene` の直下に移動（markerの管理下から外す）
+              let scene = document.querySelector("a-scene");
+              let detachedModel = model.cloneNode(true);
+              detachedModel.setAttribute("position", `${lastPosition.x} ${lastPosition.y} ${lastPosition.z}`);
+              detachedModel.setAttribute("rotation", `${lastRotation.x} ${lastRotation.y} ${lastRotation.z}`);
+              detachedModel.setAttribute("visible", "true");
+              scene.appendChild(detachedModel);
+
               modelDetached = true;
             }
           });
