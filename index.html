@@ -48,12 +48,26 @@
           marker.addEventListener("markerLost", function () {
             if (lastPosition && !modelDetached) {
               console.log("✅ マーカーが見えなくなったけど、モデルは残す");
+              
+              // 位置と回転を記録したものにセット
               model.setAttribute("position", `${lastPosition.x} ${lastPosition.y} ${lastPosition.z}`);
               model.setAttribute("rotation", `${lastRotation.x} ${lastRotation.y} ${lastRotation.z}`);
-              document.querySelector("a-scene").appendChild(model); // モデルを `a-scene` に移動
+              
+              // モデルをマーカーから外し、シーンに移動
+              document.querySelector("a-scene").appendChild(model);
               modelDetached = true;
             }
           });
+        }
+      });
+
+      // モデルを常に表示させるコンポーネント
+      AFRAME.registerComponent('keep-visible', {
+        tick: function () {
+          let model = document.querySelector("#myModel");
+          if (modelDetached) {
+            model.setAttribute("visible", "true");
+          }
         }
       });
     </script>
@@ -66,7 +80,8 @@
                   scale="8.6 8.6 8.6" 
                   rotation="90 0 0" 
                   position="0.7 -0.66 0"
-                  visible="false">
+                  visible="false"
+                  keep-visible>
         </a-entity>
       </a-marker>
       <!-- カメラ -->
@@ -74,3 +89,4 @@
     </a-scene>
   </body>
 </html>
+
