@@ -1,92 +1,82 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>AR.js Hiro Marker Sample</title>
-
-    <!-- Three.js & GLTFLoader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-
-    <!-- AR.js -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <script>
-        let lastPosition = null;  
-        let lastRotation = null;
-        let modelDetached = false;
-        let model = null;
+        let lastPosition = new THREE.Vector3();  // 最後のワールド座標を記録
+        let lastRotation = new THREE.Quaternion();  // 最後の回転を記録
+        let modelDetached = false; // モデルがワールド空間に移動したか
 
-        document.addEventListener("DOMContentLoaded", function () {
-            let sceneEl = document.querySelector("a-scene");
-            let markerEl = document.querySelector("a-marker");
+        AFRAME.registerComponent('track-marker', {
+            init: function () {
+                let marker = this.el;
+                let model = document.querySelector("#myModel").object3D;
+                let scene = document.querySelector("a-scene").object3D;
 
-            // モデルをロード
-            let loader = new THREE.GLTFLoader();
-            loader.load("https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb", function (gltf) {
-                model = gltf.scene;
-                model.scale.set(8.6, 8.6, 8.6);
-                model.visible = false;
-                sceneEl.object3D.add(model); // シーンに追加
+                marker.addEventListener("markerFound", function () {
+                    console.log("✅ マーカー検出！位置を保存 & 半透明化");
 
-                console.log("✅ モデルがロードされました！");
-            });
+                    // ワールド座標・回転を取得
+                    marker.object3D.getWorldPosition(lastPosition);
+                    marker.object3D.getWorldQuaternion(lastRotation);
 
-            // マーカー検出時の処理
-            markerEl.addEventListener("markerFound", function () {
-                console.log("✅ マーカー検出！位置を保存 & 半透明化");
-
-                let worldPos = new THREE.Vector3();
-                let worldRot = new THREE.Quaternion();
-                markerEl.object3D.getWorldPosition(worldPos);
-                markerEl.object3D.getWorldQuaternion(worldRot);
-
-                lastPosition = worldPos.clone();
-                lastRotation = worldRot.clone();
-
-                model.position.copy(lastPosition);
-                model.quaternion.copy(lastRotation);
-                model.visible = true;
-                modelDetached = false;
-
-                // 半透明化
-                setTimeout(() => {
-                    model.traverse((node) => {
-                        if (node.isMesh) {
-                            node.material.transparent = true;
-                            node.material.opacity = 0.7;
-                            node.material.alphaMode = "BLEND";
-                            node.material.blending = THREE.NormalBlending;
-                            node.material.depthWrite = false;
-                            node.material.needsUpdate = true;
-                        }
-                    });
-                    console.log("✅ 半透明が適用されました！");
-                }, 100);
-            });
-
-            // マーカーが見えなくなった時の処理
-            markerEl.addEventListener("markerLost", function () {
-                if (lastPosition && !modelDetached) {
-                    console.log("✅ マーカーが見えなくなったけど、モデルをワールド空間に固定");
-
-                    // モデルをシーン直下に移動（ワールド空間に固定）
-                    sceneEl.object3D.add(model);
                     model.position.copy(lastPosition);
                     model.quaternion.copy(lastRotation);
                     model.visible = true;
-                    modelDetached = true;
-                }
-            });
+                    modelDetached = false;
+
+                    // 半透明化処理
+                    setTimeout(() => {
+                        model.traverse((node) => {
+                            if (node.isMesh) {
+                                node.material.transparent = true;
+                                node.material.opacity = 0.7;
+                                node.material.alphaMode = "BLEND";
+                                node.material.blending = THREE.NormalBlending;
+                                node.material.depthWrite = false;
+                                node.material.needsUpdate = true;
+                                console.log("✅ 半透明が適用されました！");
+                            }
+                        });
+                    }, 100);
+                });
+
+                marker.addEventListener("markerLost", function () {
+                    if (!modelDetached) {
+                        console.log("✅ マーカーが見えなくなったけど、モデルをワールド空間に固定");
+
+                        // モデルをシーンの直下に移動（カメラの影響を受けない）
+                        scene.add(model);
+
+                        // ワールド座標を適用
+                        model.position.copy(lastPosition);
+                        model.quaternion.copy(lastRotation);
+                        model.scale.set(8.6, 8.6, 8.6); // スケールを適用
+                        
+                        model.visible = true;
+                        modelDetached = true;
+                    }
+                });
+            }
         });
     </script>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;">
-        <a-marker preset="hiro" smooth="true" smoothCount="5">
-            <a-entity id="myModel" position="0 0 0" rotation="0 0 0"></a-entity>
+        <!-- Hiroマーカーが見えたときに表示するモデル -->
+        <a-marker preset="hiro" smooth="true" smoothCount="5" track-marker>
+            <a-entity id="myModel" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
+                      scale="8.6 8.6 8.6" 
+                      rotation="90 0 0" 
+                      position="0.7 -0.66 0"
+                      visible="false">
+            </a-entity>
         </a-marker>
+        <!-- カメラ -->
         <a-entity camera></a-entity>
     </a-scene>
 </body>
