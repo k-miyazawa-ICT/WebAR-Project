@@ -7,9 +7,9 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 
     <script>
-      let lastPosition = null;  // 最後の位置を記録
-      let lastRotation = null;  // 最後の回転を記録
-      let modelDetached = false; // モデルがすでに固定されたか判定
+      let lastWorldPosition = null;
+      let lastWorldRotation = null;
+      let modelDetached = false;
 
       AFRAME.registerComponent('track-marker', {
         init: function () {
@@ -19,16 +19,20 @@
           marker.addEventListener("markerFound", function () {
             console.log("✅ マーカー検出！位置を保存 & 半透明化");
 
-            // 一度固定されたら、新しい位置を取得しない
-            if (!modelDetached) {
-              lastPosition = marker.object3D.position.clone();
-              lastRotation = marker.object3D.rotation.clone();
-            }
+            // マーカーのワールド座標と回転を保存
+            let worldPos = new THREE.Vector3();
+            marker.object3D.getWorldPosition(worldPos);
+            lastWorldPosition = worldPos.clone();
 
+            let worldQuat = new THREE.Quaternion();
+            marker.object3D.getWorldQuaternion(worldQuat);
+            lastWorldRotation = worldQuat.clone();
+
+            // モデルをマーカーの中で表示
             model.setAttribute("visible", "true");
             modelDetached = false;
 
-            // モデルの半透明化を毎回適用
+            // 半透明設定
             setTimeout(() => {
               let obj = model.getObject3D('mesh');
               if (obj) {
@@ -46,21 +50,20 @@
               } else {
                 console.error("❌ obj が null になっています！（スマホの可能性あり）");
               }
-            }, 100); // 100ms 待機
+            }, 100);
           });
 
           marker.addEventListener("markerLost", function () {
-            if (lastPosition && !modelDetached) {
+            if (lastWorldPosition && !modelDetached) {
               console.log("✅ マーカーが見えなくなったけど、モデルは残す");
 
-              // 新しくモデルを `a-scene` の直下に移動（markerの管理下から外す）
-              let scene = document.querySelector("a-scene");
-              let detachedModel = model.cloneNode(true);
-              detachedModel.setAttribute("position", `${lastPosition.x} ${lastPosition.y} ${lastPosition.z}`);
-              detachedModel.setAttribute("rotation", `${lastRotation.x} ${lastRotation.y} ${lastRotation.z}`);
-              detachedModel.setAttribute("visible", "true");
-              scene.appendChild(detachedModel);
-
+              // モデルの親要素を a-scene に変更（カメラの座標系に依存しないように）
+              document.querySelector("a-scene").appendChild(model);
+              
+              // 保存したワールド座標と回転を適用
+              model.object3D.position.copy(lastWorldPosition);
+              model.object3D.quaternion.copy(lastWorldRotation);
+              
               modelDetached = true;
             }
           });
@@ -70,7 +73,7 @@
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;">
-      <!-- Hiroマーカーが見えたときに表示するモデル -->
+      <!-- Hiroマーカー -->
       <a-marker preset="hiro" smooth="true" smoothCount="5" track-marker>
         <a-entity id="myModel" gltf-model="https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb" 
                   scale="8.6 8.6 8.6" 
