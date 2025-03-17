@@ -7,8 +7,8 @@
     <!-- Three.js r110（AR.jsと互換性あり） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
     
-    <!-- AR.js（Three.js用ビルド） -->
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/ar-threex.js"></script>
+    <!-- 修正済みのAR.js（Three.js用ビルド） -->
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.x.x/aframe/build/aframe-ar.min.js"></script>
 
     <!-- GLTFLoader（3Dモデル読み込み） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/examples/js/loaders/GLTFLoader.js"></script>
@@ -64,7 +64,7 @@
 
         loader.load("https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb", function (gltf) {
             model = gltf.scene;
-            model.scale.set(0.1, 0.1, 0.1);  // サイズ調整
+            model.scale.set(8.6, 8.6, 8.6);  // サイズ調整
             model.position.y = 0.5;  // マーカーの上に配置
             model.visible = false;  // 初期状態は非表示
             markerRoot.add(model);
