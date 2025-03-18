@@ -4,29 +4,21 @@
     <meta charset="UTF-8">
     <title>AR.js + Three.js マーカー独立表示</title>
 
-    <!-- Three.js の読み込み -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/GLTFLoader.js';
 
-    <!-- AR.js の読み込み -->
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.1.0/three.js/build/ar.js"></script>
-
-    <!-- GLTFLoader の読み込み -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.110.0/examples/js/loaders/GLTFLoader.js"></script>
-</head>
-<body style="margin: 0; overflow: hidden;">
-    <script>
         let scene, camera, renderer;
         let arToolkitSource, arToolkitContext;
-        let markerRoot, markerControls;
-        let model = null;
+        let markerRoot;
+        let model;
         let modelPlaced = false;
 
         function init() {
             scene = new THREE.Scene();
-
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             scene.add(camera);
-
+            
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
@@ -42,9 +34,8 @@
                 onResize();
             });
 
-            // 🔧 ここを修正 (GitHubのcamera_para.datを使用)
             arToolkitContext = new ARjs.Context({
-                cameraParametersUrl: 'https://raw.githubusercontent.com/k-miyazawa-ICT/WebAR-Project/main/camera_para.dat',
+                cameraParametersUrl: 'https://k-miyazawa-ICT.github.io/WebAR-Project/camera_para.dat',
                 detectionMode: 'mono'
             });
 
@@ -55,27 +46,30 @@
             markerRoot = new THREE.Group();
             scene.add(markerRoot);
 
-            markerControls = new ARjs.MarkerControls(arToolkitContext, markerRoot, {
+            let markerControls = new ARjs.MarkerControls(arToolkitContext, markerRoot, {
                 type: 'pattern',
                 patternUrl: 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.1.0/data/data/patt.hiro',
                 changeMatrixMode: 'modelViewMatrix'
             });
 
-            let loader = new THREE.GLTFLoader();
+            let loader = new GLTFLoader();
             loader.load('https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb', (gltf) => {
-                model = gltf.scene;
-                model.scale.set(8.6, 8.6, 8.6);
-                model.rotation.set(Math.PI / 2, 0, 0);
-                model.visible = false;
+                model = findValidObject3D(gltf.scene);
+                console.log("モデルが読み込まれました:", model);
+                console.log("モデルのクラス:", model.constructor.name);
 
-                model.traverse((child) => {
-                    if (child.isMesh) {
-                        child.material.transparent = true;
-                        child.material.opacity = 0.7;
+                model.scale.set(8.6, 8.6, 8.6);
+                model.position.set(0.7, -0.66, 0);
+                model.rotation.set(Math.PI / 2, 0, 0);
+
+                model.traverse((object) => {
+                    if (object.isMesh && object.material) {
+                        object.material.transparent = true;
+                        object.material.opacity = 0.5;
                     }
                 });
 
-                scene.add(model);
+                markerRoot.add(model);
             });
 
             function animate() {
@@ -85,19 +79,32 @@
                     arToolkitContext.update(arToolkitSource.domElement);
                 }
 
-                if (markerControls.object3d.visible) {
-                    if (!modelPlaced && model) {
-                        model.position.setFromMatrixPosition(markerRoot.matrixWorld);
-                        model.quaternion.setFromRotationMatrix(markerRoot.matrixWorld);
-                        model.visible = true;
-                        modelPlaced = true;
-                    }
+                if (model && markerRoot.visible && !modelPlaced) {
+                    console.log("モデルを固定します。");
+                    model.matrix.copy(markerRoot.matrixWorld);
+                    model.position.setFromMatrixPosition(markerRoot.matrixWorld);
+                    model.quaternion.setFromRotationMatrix(markerRoot.matrixWorld);
+                    model.scale.setFromMatrixScale(markerRoot.matrixWorld);
+
+                    scene.add(model);
+                    markerRoot.remove(model);
+                    modelPlaced = true;
                 }
 
                 renderer.render(scene, camera);
             }
 
             animate();
+        }
+
+        function findValidObject3D(root) {
+            let validObject = null;
+            root.traverse((child) => {
+                if (child instanceof THREE.Object3D && !validObject) {
+                    validObject = child;
+                }
+            });
+            return validObject || root;
         }
 
         function onResize() {
@@ -110,5 +117,7 @@
 
         window.onload = init;
     </script>
+</head>
+<body style="margin: 0; overflow: hidden;">
 </body>
 </html>
