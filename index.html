@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <title>AR.js + Three.js マーカー独立表示</title>
 
-    <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js';
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/loaders/GLTFLoader.js';
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.1.0/three.js/build/ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.110.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <script>
         let scene, camera, renderer;
         let arToolkitSource, arToolkitContext;
         let markerRoot;
@@ -16,14 +18,16 @@
 
         function init() {
             scene = new THREE.Scene();
+
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             scene.add(camera);
-            
+
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
             arToolkitSource = new ARjs.Source({ sourceType: 'webcam' });
+
             arToolkitSource.init(() => {
                 setTimeout(() => {
                     onResize();
@@ -35,14 +39,20 @@
             });
 
             arToolkitContext = new ARjs.Context({
-                cameraParametersUrl: 'https://k-miyazawa-ICT.github.io/WebAR-Project/camera_para.dat',
+                cameraParametersUrl: 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.1.0/data/data/camera_para.dat',
                 detectionMode: 'mono'
             });
 
             arToolkitContext.init(() => {
                 camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+                // willReadFrequently を設定してパフォーマンス警告を軽減
+                if (arToolkitContext.arController && arToolkitContext.arController.canvas) {
+                    const canvas = arToolkitContext.arController.canvas;
+                    canvas.getContext('2d', { willReadFrequently: true });
+                }
             });
 
+            // マーカーのルート
             markerRoot = new THREE.Group();
             scene.add(markerRoot);
 
@@ -52,16 +62,27 @@
                 changeMatrixMode: 'modelViewMatrix'
             });
 
-            let loader = new GLTFLoader();
+            let loader = new THREE.GLTFLoader();
             loader.load('https://k-miyazawa-ICT.github.io/WebAR-Project/model.glb', (gltf) => {
-                model = findValidObject3D(gltf.scene);
-                console.log("モデルが読み込まれました:", model);
-                console.log("モデルのクラス:", model.constructor.name);
+                model = gltf.scene;
 
+                // オプション: モデルの構造をフラットにする（必要に応じて有効化）
+                /*
+                const flatModel = new THREE.Group();
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        flatModel.add(child.clone()); // メッシュだけを新しいグループに追加
+                    }
+                });
+                model = flatModel;
+                */
+
+                // スケール、位置、回転を設定
                 model.scale.set(8.6, 8.6, 8.6);
-                model.position.set(0.7, -0.66, 0);
+                model.position.set(0, 0, 0);
                 model.rotation.set(Math.PI / 2, 0, 0);
 
+                // マテリアルを透明に設定
                 model.traverse((object) => {
                     if (object.isMesh && object.material) {
                         object.material.transparent = true;
@@ -69,6 +90,7 @@
                     }
                 });
 
+                // markerRoot に追加
                 markerRoot.add(model);
             });
 
@@ -79,15 +101,33 @@
                     arToolkitContext.update(arToolkitSource.domElement);
                 }
 
-                if (model && markerRoot.visible && !modelPlaced) {
-                    console.log("モデルを固定します。");
-                    model.matrix.copy(markerRoot.matrixWorld);
-                    model.position.setFromMatrixPosition(markerRoot.matrixWorld);
-                    model.quaternion.setFromRotationMatrix(markerRoot.matrixWorld);
-                    model.scale.setFromMatrixScale(markerRoot.matrixWorld);
+                // マーカーが検出され、まだ適用されていない場合
+                if (markerRoot.visible && !modelPlaced) {
+                    console.log("markerRoot をワールド空間に適用");
 
-                    scene.add(model);
-                    markerRoot.remove(model);
+                    // 新しいグループを作成
+                    let newRoot = new THREE.Group();
+
+                    // markerRoot のワールド行列を分解して適用
+                    const matrix = markerRoot.matrixWorld;
+                    const position = new THREE.Vector3();
+                    const quaternion = new THREE.Quaternion();
+                    const scale = new THREE.Vector3();
+                    matrix.decompose(position, quaternion, scale);
+
+                    newRoot.position.copy(position);
+                    newRoot.quaternion.copy(quaternion);
+                    newRoot.scale.copy(scale);
+
+                    // すべての子要素を新しい親に移動
+                    while (markerRoot.children.length > 0) {
+                        newRoot.add(markerRoot.children[0]);
+                    }
+
+                    scene.add(newRoot); // シーンに追加
+                    scene.remove(markerRoot); // markerRoot を削除
+                    markerRoot = newRoot; // 新しいルートを設定
+
                     modelPlaced = true;
                 }
 
@@ -95,16 +135,6 @@
             }
 
             animate();
-        }
-
-        function findValidObject3D(root) {
-            let validObject = null;
-            root.traverse((child) => {
-                if (child instanceof THREE.Object3D && !validObject) {
-                    validObject = child;
-                }
-            });
-            return validObject || root;
         }
 
         function onResize() {
@@ -117,7 +147,5 @@
 
         window.onload = init;
     </script>
-</head>
-<body style="margin: 0; overflow: hidden;">
 </body>
 </html>
