@@ -1,10 +1,13 @@
 <button id="startAR">ARを開始</button>
 <button id="stopAR">ARを終了</button>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
     let xrSession = null; // WebXRセッションの管理
+    let scene, camera, renderer;
+    let model;
 
     async function initAR() {
         if (!navigator.xr) {
@@ -24,6 +27,40 @@
             });
 
             console.log("WebXRセッション開始:", xrSession);
+
+            // ✅ WebGLコンテキストを作成
+            const gl = document.createElement("canvas").getContext("webgl", { xrCompatible: true });
+            renderer = new THREE.WebGLRenderer({ alpha: true, context: gl });
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // ✅ WebXRセッションをレンダラーに適用
+            renderer.xr.setSession(xrSession);
+
+            // ✅ シーンのセットアップ
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            scene.add(camera);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            // ✅ 3Dモデルを読み込む
+            const loader = new THREE.GLTFLoader();
+            loader.load("https://k-miyazawa-ict.github.io/WebAR-Project/model.glb", (gltf) => {
+                model = gltf.scene;
+                model.scale.set(0.5, 0.5, 0.5);
+                model.visible = false;  // 初期状態では非表示
+                scene.add(model);
+            });
+
+            // ✅ WebXRのレンダリングループ
+            function render() {
+                renderer.setAnimationLoop(() => {
+                    renderer.render(scene, camera);
+                });
+            }
+            render();
 
             // ✅ セッション終了時にリセット
             xrSession.addEventListener("end", () => {
@@ -53,4 +90,3 @@
         }
     });
 </script>
-
