@@ -1,7 +1,7 @@
-<script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
-    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
+<script>
     let scene, camera, renderer, model;
 
     function init() {
@@ -17,7 +17,7 @@
         const light = new THREE.HemisphereLight(0xffffff, 0x888888, 1);
         scene.add(light);
 
-        const loader = new GLTFLoader();
+        const loader = new THREE.GLTFLoader();
         loader.load('https://k-miyazawa-ict.github.io/WebAR-Project/model.glb', (gltf) => {
             model = gltf.scene;
             model.scale.set(1, 1, 1);
