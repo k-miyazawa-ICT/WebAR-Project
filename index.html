@@ -1,36 +1,51 @@
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<button id="startAR">ARを開始</button>
+<script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
 
-<script>
     let scene, camera, renderer, model;
+    let xrSession = null;
 
-    function init() {
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.5, 3);
-        scene.add(camera);
+    async function initAR() {
+        if (!navigator.xr) {
+            alert("WebXR未対応のブラウザです。");
+            return;
+        }
 
-        renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        // WebXRセッション開始
+        xrSession = await navigator.xr.requestSession("immersive-ar", {
+            requiredFeatures: ['hit-test']
+        });
+
+        // WebGLコンテキスト設定
+        const gl = document.createElement("canvas").getContext("webgl");
+        renderer = new THREE.WebGLRenderer({ alpha: true, context: gl });
+        renderer.xr.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0x888888, 1);
+        // シーンのセットアップ
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        scene.add(camera);
+
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
         scene.add(light);
 
-        const loader = new THREE.GLTFLoader();
-        loader.load('https://k-miyazawa-ict.github.io/WebAR-Project/model.glb', (gltf) => {
+        // GLTFモデルの読み込み
+        const loader = new GLTFLoader();
+        loader.load("https://k-miyazawa-ict.github.io/WebAR-Project/model.glb", (gltf) => {
             model = gltf.scene;
-            model.scale.set(1, 1, 1);
+            model.scale.set(0.5, 0.5, 0.5);
             scene.add(model);
         });
 
-        animate();
+        // WebXRのレンダリングループ
+        renderer.setAnimationLoop(() => {
+            renderer.render(scene, camera);
+        });
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-    }
-
-    window.onload = init;
+    document.getElementById("startAR").addEventListener("click", () => {
+        initAR();
+    });
 </script>
