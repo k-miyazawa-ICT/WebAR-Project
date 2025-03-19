@@ -1,12 +1,10 @@
 <button id="startAR">ARを開始</button>
-<script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.min.js';
-    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
+<button id="stopAR">ARを終了</button>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
-    let scene, camera, renderer, model;
-    let xrSession = null;
-    let xrRefSpace = null;
-    let xrHitTestSource = null;
+<script>
+    let xrSession = null; // WebXRセッションの管理
 
     async function initAR() {
         if (!navigator.xr) {
@@ -14,58 +12,45 @@
             return;
         }
 
-        xrSession = await navigator.xr.requestSession("immersive-ar", {
-            requiredFeatures: ['hit-test']
-        });
+        // ✅ すでにWebXRセッションがアクティブか確認
+        if (xrSession) {
+            console.warn("すでにWebXRセッションがアクティブです。");
+            return;
+        }
 
-        const gl = document.createElement("canvas").getContext("webgl");
-        renderer = new THREE.WebGLRenderer({ alpha: true, context: gl });
-        renderer.xr.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        try {
+            xrSession = await navigator.xr.requestSession("immersive-ar", {
+                requiredFeatures: ['hit-test']
+            });
 
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-        scene.add(camera);
+            console.log("WebXRセッション開始:", xrSession);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-        scene.add(light);
+            // ✅ セッション終了時にリセット
+            xrSession.addEventListener("end", () => {
+                console.log("WebXRセッションが終了しました。");
+                xrSession = null;
+            });
 
-        // 3Dモデルを読み込む
-        const loader = new GLTFLoader();
-        loader.load("https://k-miyazawa-ict.github.io/WebAR-Project/model.glb", (gltf) => {
-            model = gltf.scene;
-            model.scale.set(0.5, 0.5, 0.5);
-            model.visible = false;  // 初期状態では非表示
-            scene.add(model);
-        });
-
-        // WebXRのレンダリングループ
-        const xrSessionReferenceSpace = await xrSession.requestReferenceSpace("local");
-        xrSession.requestAnimationFrame((time, frame) => render(time, frame));
-
-        // ヒットテスト（平面検出）
-        const viewerRefSpace = await xrSession.requestReferenceSpace("viewer");
-        xrHitTestSource = await xrSession.requestHitTestSource({ space: viewerRefSpace });
-
-        // ユーザーのタップでモデルを配置
-        xrSession.addEventListener("select", (event) => {
-            if (xrHitTestSource && model) {
-                const hitTestResults = frame.getHitTestResults(xrHitTestSource);
-                if (hitTestResults.length > 0) {
-                    const hitPose = hitTestResults[0].getPose(xrSessionReferenceSpace);
-                    model.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-                    model.visible = true;
-                }
-            }
-        });
+        } catch (error) {
+            console.error("WebXRセッションエラー:", error);
+            xrSession = null;
+        }
     }
 
-    function render(time, frame) {
-        renderer.render(scene, camera);
-        xrSession.requestAnimationFrame((time, frame) => render(time, frame));
-    }
-
+    // ✅ 「ARを開始」ボタンを1回しか押せないようにする
     document.getElementById("startAR").addEventListener("click", () => {
-        initAR();
+        document.getElementById("startAR").disabled = true;
+        initAR().finally(() => {
+            document.getElementById("startAR").disabled = false;
+        });
+    });
+
+    // ✅ WebXRセッションを明示的に終了するボタン
+    document.getElementById("stopAR").addEventListener("click", () => {
+        if (xrSession) {
+            xrSession.end();
+            console.log("WebXRセッションを手動で終了しました。");
+        }
     });
 </script>
+
